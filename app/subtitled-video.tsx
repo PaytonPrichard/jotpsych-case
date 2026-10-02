@@ -7,7 +7,15 @@ import { useEffect, useRef, useState } from "react";
 // Fullscreen shows only the <video>, so there the track switches to "showing" and the browser
 // draws the captions natively. One switch drives both: native captions and our overlay are
 // never on at the same time.
-export function SubtitledVideo({ videoUrl, vttUrl }: { videoUrl: string; vttUrl: string }) {
+export function SubtitledVideo({
+  videoUrl,
+  vttUrl,
+  onPlay,
+}: {
+  videoUrl: string;
+  vttUrl: string;
+  onPlay?: () => void;
+}) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const trackRef = useRef<HTMLTrackElement>(null);
   const [text, setText] = useState("");
@@ -88,6 +96,7 @@ export function SubtitledVideo({ videoUrl, vttUrl }: { videoUrl: string; vttUrl:
         controls
         autoPlay
         playsInline
+        onPlay={onPlay}
         className="h-full w-full object-contain"
       >
         <track ref={trackRef} kind="subtitles" src={vttUrl} srcLang="en" label="English" />

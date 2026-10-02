@@ -9,6 +9,7 @@
 - Limit counted only after a successful submit: failed attempts should not use up a visitor's quota.
 - Status route calls result() once COMPLETED: a completed request can still have failed, and result() surfaces that error.
 - Client polls with chained setTimeout (4s), not setInterval: never more than one status request in flight.
+- Resume after refresh: a started job's { requestId, script, startedAt } goes to localStorage; on load, a job under 10 minutes old resumes polling at once and shows its status. It's cleared when the video starts playing or the job fails. A resumed job that fails or outlives 10 minutes returns to idle silently (no error). A fresh job's failure still shows the error and Try again. Not cleared on completion alone, so a refresh before pressing play brings the finished video back. localStorage access is wrapped in try/catch; blocked storage just means no resume.
 - Step 1 hardcodes the script and videoPrompt: proves the fal pipeline end to end on the live URL before adding Claude.
 - Claude (claude-sonnet-5-5) returns { animal, script, videoPrompt } via structured outputs (zod schema): no hand-parsing JSON, a bad shape fails loudly.
 - Claude effort "low": the visitor is waiting on this call, and a 15-word script doesn't need deep reasoning.
@@ -60,6 +61,7 @@
 
 ## Weak spots
 
+- Resuming a finished-but-unplayed job asks the status route again, which re-runs Whisper (one extra Whisper call per refresh).
 - isFeature is the model's judgement. If a real feature gets the "doesn't look like a JotPsych feature" message, add that phrasing to the true examples in lib/script.ts; mock mode skips the check entirely.
 - Fullscreen captions are the browser's native ones: iPhone uses the system caption style (our colors don't apply there) and positions can shift with the controls. Fullscreen events were tested by dispatching them; check on a real iPhone and a desktop browser.
 - Veo can draw prompt text as writing in the scene. Hex codes are stripped and props are told to carry no words, but any noun that implies text (notepad, laptop screen, sign) can still sprout scribbles; check the logged videoPrompt for the clip that has writing.

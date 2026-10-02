@@ -2,13 +2,22 @@
 
 import { useEffect, useRef, useState } from "react";
 import { config } from "@/lib/config";
+import { RESUME_WINDOW_MS, clearJob, loadJob, saveJob } from "@/lib/pending-job";
 import { cuesFromScript, cuesFromWords, toVtt, type Word } from "@/lib/subtitles";
 import { SubtitledVideo } from "./subtitled-video";
 
 type Phase =
   | { kind: "idle" }
   | { kind: "submitting" }
-  | { kind: "waiting"; requestId: string; script: string; queueStatus: string }
+  | {
+      kind: "waiting";
+      requestId: string;
+      script: string;
+      queueStatus: string;
+      // Resumed after a refresh: failures clear silently instead of showing an error.
+      resumed: boolean;
+      startedAt: number;
+    }
   | { kind: "done"; videoUrl: string; vttUrl: string }
   | { kind: "error"; message: string };
 
@@ -26,7 +35,20 @@ export default function Home() {
   const [input, setInput] = useState("");
   const [phase, setPhase] = useState<Phase>({ kind: "idle" });
   const scriptRef = useRef("");
-  const requestId = phase.kind === "waiting" ? phase.requestId : null;
+  const waiting = phase.kind === "waiting" ? phase : null;
+  const requestId = waiting?.requestId ?? null;
+  const resumed = waiting?.resumed ?? false;
+  const startedAt = waiting?.startedAt ?? 0;
+
+  // Resume a job saved before a refresh (under 10 minutes old).
+  useEffect(() => {
+    const job = loadJob();
+    if (!job) return;
+    scriptRef.current = job.script;
+    // Restoring from localStorage can only happen after mount, so this setState is intended.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setPhase({ kind: "waiting", requestId: job.requestId, script: job.script, queueStatus: "IN_PROGRESS", resumed: true, startedAt: job.startedAt });
+  }, []);
 
   async function generate() {
     setPhase({ kind: "submitting" });
@@ -39,7 +61,15 @@ export default function Home() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Something went wrong.");
       scriptRef.current = data.script;
-      setPhase({ kind: "waiting", requestId: data.requestId, script: data.script, queueStatus: "IN_QUEUE" });
+      saveJob(data.requestId, data.script);
+      setPhase({
+        kind: "waiting",
+        requestId: data.requestId,
+        script: data.script,
+        queueStatus: "IN_QUEUE",
+        resumed: false,
+        startedAt: Date.now(),
+      });
     } catch (err) {
       setPhase({ kind: "error", message: errorMessage(err) });
     }
@@ -51,7 +81,14 @@ export default function Home() {
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout>;
 
+    // A saved job that fails or outlives the resume window is dropped without an error message.
+    const giveUpSilently = () => {
+      clearJob();
+      setPhase({ kind: "idle" });
+    };
+
     async function poll() {
+      if (resumed && Date.now() - startedAt > RESUME_WINDOW_MS) return giveUpSilently();
       try {
         const params = new URLSearchParams({ id: requestId!, script: scriptRef.current });
         const res = await fetch(`/api/status?${params}`);
@@ -65,16 +102,20 @@ export default function Home() {
         setPhase((p) => (p.kind === "waiting" ? { ...p, queueStatus: data.status } : p));
         timer = setTimeout(poll, config.pollIntervalMs);
       } catch (err) {
-        if (!cancelled) setPhase({ kind: "error", message: errorMessage(err) });
+        if (cancelled) return;
+        if (resumed) return giveUpSilently();
+        clearJob();
+        setPhase({ kind: "error", message: errorMessage(err) });
       }
     }
 
-    timer = setTimeout(poll, config.pollIntervalMs);
+    // A resumed job checks at once; it has usually been running for a while.
+    timer = setTimeout(poll, resumed ? 0 : config.pollIntervalMs);
     return () => {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [requestId]);
+  }, [requestId, resumed, startedAt]);
 
   // Free the subtitle blob when it's replaced.
   const vttUrl = phase.kind === "done" ? phase.vttUrl : null;
@@ -138,7 +179,7 @@ export default function Home() {
         >
           <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-xl bg-[#1E125E]">
             {phase.kind === "done" ? (
-              <SubtitledVideo videoUrl={phase.videoUrl} vttUrl={phase.vttUrl} />
+              <SubtitledVideo videoUrl={phase.videoUrl} vttUrl={phase.vttUrl} onPlay={clearJob} />
             ) : (
               <p className="px-4 text-center text-sm opacity-60">Your video will play here.</p>
             )}
