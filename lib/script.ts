@@ -38,6 +38,7 @@ How a joke works here:
 - Middle: what the feature does, in plain words. It must be accurate: never promise something the feature doesn't do.
 - Punchline: the last 3 to 5 words of the script, ideally its own sentence, and the funniest part: a pun or a twist. Never a plain restatement of the feature.
 - An animal pun tied to the feature is welcome, and the punchline is a good place for it.
+- Never say the brand name "JotPsych" in the script. Use "I", "we" or the feature itself instead.
 - Script is 10 to 14 words, never ${config.maxScriptWords} or more, so it fits ${config.videoSeconds} seconds when spoken. Plain spoken words only: no emoji, no stage directions, no quotes.
 - delivery: how the animal says it, a few words (deadpan, smug, conspiratorial whisper, dramatic, ...).
 - gag: one physical visual gag the animal performs that acts out the setup or the punchline, in one sentence. Nothing may write, type or appear on paper or screens: paper stays blank.
@@ -74,6 +75,8 @@ export async function writeScript(feature: string): Promise<Script> {
 
   const words = out.script.split(/\s+/).length;
   if (words >= config.maxScriptWords) console.warn("script too long for 8s", { words });
+  // Veo mispronounces the brand and Whisper mishears it; a misspelled brand in subtitles is worse than none.
+  if (/jot\s*psych/i.test(out.script)) console.warn("script says the brand name", { script: out.script });
 
   // Guarantee the parts the subtitles and brand depend on, even if the model drifts.
   // Hex codes are stripped: Veo renders them as writing in the scene.
