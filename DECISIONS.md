@@ -13,6 +13,14 @@
 - Claude (claude-sonnet-5-5) returns { animal, script, videoPrompt } via structured outputs (zod schema): no hand-parsing JSON, a bad shape fails loudly.
 - Claude effort "low": the visitor is waiting on this call, and a 15-word script doesn't need deep reasoning.
 - Script prompt asks for 10 to 14 words: asking for "under 20" produced exactly 20; the lower target lands at 15-16 in testing.
+- Humor: 3 candidates, keep the best; setup/punchline plus a physical gag and a delivery note, because 'be funny' alone produced cute but flat scripts.
+- Candidates sit first in the one structured-output schema, so the model drafts three jokes and then copies the funniest into animal/delivery/gag/script: one Claude call, no extra latency (5-9s measured).
+- Each candidate carries a wordCount the model fills in: without it 3 of 4 chosen scripts ran 15-17 words; with it all 4 landed at 13-14.
+- Prompt forbids reusing the two example jokes: on the first run the squirrel example came back nearly verbatim.
+- Gags must act out the setup or punchline, and nothing may write or appear on paper or screens: early gags were unrelated (a beaver dropping a log) or had a page "filling with squiggly lines", which invites visible writing.
+- Tone guardrails in the prompt: punch at paperwork, typing, insurance denials and admin, never at clinicians, patients or therapy; no diagnoses, symptoms, medications or patient details; brand-safe for JotPsych social.
+- Stayed on effort "low" for scripts: "medium" was no funnier on the same four features, no faster, and still miscounted words.
+- videoPrompt has the line in the form: says in a <delivery> voice: "<script>"; the server appends that sentence (with the gag) if the model dropped the script.
 - Feature text wrapped in <feature> tags and declared as data, not instructions: limits prompt injection from the textarea.
 - Server appends the script and the brand/no-captions line to videoPrompt if Claude dropped them: subtitles and brand colors depend on both.
 - Video prompt describes colors in words only ("deep navy blue background, violet purple and soft pink accents") plus "no on-screen text, no captions, no writing"; any hex code Claude adds is stripped server-side, and props must carry no words: Veo drew "#1C1E85" as text on a prop in the first live test. Exact hex values live only in our page (frame + subtitles).
@@ -41,7 +49,7 @@
 - Veo can draw prompt text as writing in the scene. Hex codes are stripped and props are told to carry no words, but any noun that implies text (notepad, laptop screen, sign) can still sprout scribbles; check the logged videoPrompt for the clip that has writing.
 - Daily limit is a cookie: clearing cookies or a private window resets it. First thing to check if fal spend spikes; the fix is an IP-keyed counter in a KV store (e.g. Upstash Redis).
 - fal/Veo content refusals surface as a generic "couldn't be generated" message: check the "fal status failed" log line for the real fal error body.
-- Script length is enforced only by the prompt (10-14 words asked, 15-16 typical). Check the "script too long for 8s" warning in logs; a long script gets cut off at 8s and the last cue never plays.
+- Script length is enforced only by the prompt and the model's own wordCount (13-14 typical, but it miscounted to 15 a few times). Check the "script too long for 8s" warning in logs; a long script gets cut off at 8s and the last cue never plays.
 - Whisper can mishear brand words ("JotPsych"). If subtitles show the wrong spelling, pass the script as whisper's prompt or snap near-matches back to script words.
 - Switching videoModel in lib/config.ts while a video is in flight makes its status call query the other endpoint. Redeploy only when no one is mid-generation, or return the model with requestId.
 - The status route trusts any fal request id: anyone who guesses an id can see that video. Ids are random UUIDs, so low risk.
