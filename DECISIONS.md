@@ -26,14 +26,17 @@
 - Whisper runs inside the status call that first sees COMPLETED: one round trip, the server only transcribes URLs fal itself returned (no client-supplied URLs), and the client stops polling after that.
 - Whisper failure or 30s timeout returns words: null and the client falls back to script cues (2 or 3, spread over 0.5s-7.5s): a video with approximate subtitles beats an error.
 - Cues: split at sentence ends, then cut each sentence evenly into 3-5 word cues; each cue holds until the next starts: greedy grouping left a 6-word cue spanning two sentences on real output.
-- WebVTT built in the browser as a Blob URL on a <track default>: no storage needed, and a real <track> works in iOS fullscreen where script-added cues are less reliable.
-- ::cue styled with exact #FFF2F5 text on #1E125E; frame is a #FD96C9 to #813FE8 gradient border; page #1C1E85: exact brand hex values, no approximations.
+- WebVTT built in the browser as a Blob URL on a <track>: no storage needed, and the track stays the single source of cue timing.
+- Subtitles drawn as our own overlay, not native cues: the track is set to mode "hidden" (cues load, nothing native renders) and the active cue is picked from track.cues on timeupdate/seeked/cuechange. Native cue position jumped up and down with the controls, and iOS ignores ::cue styling.
+- Overlay sits at a fixed spot 22% up from the frame bottom (lower third, above the native control bar), pointer-events none so taps reach the video; bold, centered, max 2 lines, font max(15px, 6% of frame width), #FFF2F5 on #1E125E at 85% opacity written as exact rgb(30 18 94 / 0.85). Shows in the normal iPhone page view because the video is playsInline.
+- Frame is a #FD96C9 to #813FE8 gradient border; page #1C1E85: exact brand hex values, no approximations.
 - MOCK flag in lib/config.ts (default false): skips Claude and Veo, returns a fake requestId and fixed script, and status returns a fixed video URL after 5s. Whisper still runs on that video, so the real subtitle path is tested; costs only a Whisper call.
 - Mock requestId is "mock-<timestamp>" and status computes 5s elapsed from it: no server state, works across serverless instances.
 - Mock mode skips the daily limit and never sets the cookie: it doesn't generate a video, so it shouldn't use up real quota.
 
 ## Weak spots
 
+- iOS native fullscreen hides our subtitle overlay (only page-level elements render there, and the track is hidden). playsInline keeps the normal view; if fullscreen subtitles matter, switch the track to "showing" on webkitbeginfullscreen.
 - Veo can draw prompt text as writing in the scene. Hex codes are stripped and props are told to carry no words, but any noun that implies text (notepad, laptop screen, sign) can still sprout scribbles; check the logged videoPrompt for the clip that has writing.
 - Daily limit is a cookie: clearing cookies or a private window resets it. First thing to check if fal spend spikes; the fix is an IP-keyed counter in a KV store (e.g. Upstash Redis).
 - fal/Veo content refusals surface as a generic "couldn't be generated" message: check the "fal status failed" log line for the real fal error body.

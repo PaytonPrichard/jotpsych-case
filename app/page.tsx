@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { config } from "@/lib/config";
 import { cuesFromScript, cuesFromWords, toVtt, type Word } from "@/lib/subtitles";
+import { SubtitledVideo } from "./subtitled-video";
 
 type Phase =
   | { kind: "idle" }
@@ -132,9 +133,7 @@ export default function Home() {
         >
           <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-xl bg-[#1E125E]">
             {phase.kind === "done" ? (
-              <video src={phase.videoUrl} controls autoPlay playsInline className="h-full w-full object-contain">
-                <track kind="subtitles" src={phase.vttUrl} srcLang="en" label="English" default />
-              </video>
+              <SubtitledVideo videoUrl={phase.videoUrl} vttUrl={phase.vttUrl} />
             ) : (
               <p className="px-4 text-center text-sm opacity-60">Your video will play here.</p>
             )}
