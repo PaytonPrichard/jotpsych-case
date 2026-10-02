@@ -1,4 +1,4 @@
-import { config } from "@/lib/config";
+import { config, videoModel } from "@/lib/config";
 import { fal } from "@/lib/fal";
 import { recordUse, usedToday } from "@/lib/limit";
 import { MOCK_SCRIPT, mockEnabled, mockRequestId } from "@/lib/mock";
@@ -51,11 +51,12 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { request_id } = await fal.queue.submit(config.videoModel, {
+    const model = videoModel();
+    const { request_id } = await fal.queue.submit(model, {
       input: { prompt: script.videoPrompt, ...config.video },
     });
     await recordUse(used);
-    console.log("submitted", { requestId: request_id, model: config.videoModel, ...script });
+    console.log("submitted", { requestId: request_id, model, ...script });
     return Response.json({ requestId: request_id, script: script.script });
   } catch (err) {
     console.error("fal submit failed", err);

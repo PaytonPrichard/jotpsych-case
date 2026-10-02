@@ -28,6 +28,8 @@
 - Anthropic client maxRetries 0: matches the no-automatic-retries rule; the visitor gets an error and a Try again button instead.
 - Video model is a VideoModel union in lib/config.ts (veo3.1/lite or veo3.1/fast): both take identical input, so switching is one line.
 - videoModel stays on fal-ai/veo3.1/lite for now: Fast gets compared on one example later before paying more per video.
+- VIDEO_MODEL env var overrides the video model, same pattern as MOCK: read per request, only fal-ai/veo3.1/lite or fal-ai/veo3.1/fast accepted, anything else logs a warning and uses lite. Set only in .env.local to compare Fast; never set on Vercel, so production always runs lite.
+- Status route logs one JSON line "video completed" with requestId, model, videoUrl, script and what Whisper heard: every video is findable in Vercel logs. The client sends the script back on each poll because only generate knows it; it's capped at 500 chars and logged as data.
 - Whole page fits one screen with no scrolling (laptop and phone): main is h-svh, text box and Go take their natural height, and the player is the largest 9:16 box in the remaining space via a size container (width = min(100cqw, 100cqh * 9/16)). Verified at 390x844, 375x667, 360x640, 1280x720, 1440x900: exact 9:16, no page scroll before, during and after generation.
 - Text box shows 4 whole lines (80px textarea, 16px text, 20px line height) and scrolls internally for longer input; border, background and padding sit on a wrapper div, not the textarea: padding inside a scrolling textarea scrolls away and the visible area stops being a whole number of lines, which cut the top line in half on 4+ line inputs. 16px because iPhone Safari zooms when focusing an input under 16px. Verified with a 7-9 line input at 1366x657, 1366x768, 390x844, 375x667 and 360x640: whole lines at every scroll stop, no page scroll, player still exactly 9:16.
 - Placeholder "Your video will play here." inside the frame before a video exists: the empty frame reads as broken otherwise.
@@ -51,7 +53,7 @@
 - fal/Veo content refusals surface as a generic "couldn't be generated" message: check the "fal status failed" log line for the real fal error body.
 - Script length is enforced only by the prompt and the model's own wordCount (13-14 typical, but it miscounted to 15 a few times). Check the "script too long for 8s" warning in logs; a long script gets cut off at 8s and the last cue never plays.
 - Whisper can mishear brand words ("JotPsych"). If subtitles show the wrong spelling, pass the script as whisper's prompt or snap near-matches back to script words.
-- Switching videoModel in lib/config.ts while a video is in flight makes its status call query the other endpoint. Redeploy only when no one is mid-generation, or return the model with requestId.
+- Changing VIDEO_MODEL while a video is in flight makes its status call query the other endpoint. Change it only when nothing is generating (it's local-only anyway). Env changes in .env.local need a dev-server restart.
 - The status route trusts any fal request id: anyone who guesses an id can see that video. Ids are random UUIDs, so low risk.
 - autoPlay with sound is blocked on most phones: the video waits for a tap on the visible play control. Expected, not a bug.
 - The mock video URL is a fal media file cached for 60 days; if mock mode shows a broken player, replace MOCK_VIDEO_URL in lib/mock.ts.

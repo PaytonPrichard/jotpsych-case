@@ -53,7 +53,8 @@ export default function Home() {
 
     async function poll() {
       try {
-        const res = await fetch(`/api/status?id=${encodeURIComponent(requestId!)}`);
+        const params = new URLSearchParams({ id: requestId!, script: scriptRef.current });
+        const res = await fetch(`/api/status?${params}`);
         const data = await res.json();
         if (cancelled) return;
         if (!res.ok || data.status === "FAILED") throw new Error(data.error ?? "Something went wrong.");
