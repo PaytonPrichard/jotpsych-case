@@ -45,6 +45,7 @@ How a joke works here:
 - Middle: what the feature does, in plain words. It must be accurate: never promise something the feature doesn't do.
 - Punchline: the last 3 to 5 words of the script, ideally its own sentence, and the funniest part: a pun or a twist. Never a plain restatement of the feature.
 - An animal pun tied to the feature is welcome, and the punchline is a good place for it.
+- A pun must twist a real, common phrase, and the twisted version must connect to the feature. The pattern, shown with other products so you can't copy it: a window-cleaning robot, "No pane, no gain"; a bakery's dough timer, "On a knead-to-know basis"; a plumber's booking app, "Pipe dream come true". Bad: "Bark approved" and "Beak happy": they sound like phrases but mean nothing. Never reuse any of these. A clear, funny line with no pun beats a forced pun, but it still ends on a twist, never on plain information like "before you sign".
 - Never say the brand name "JotPsych" in the script. Use "I", "we" or the feature itself instead.
 - Script is 10 to 14 words, never ${config.maxScriptWords} or more, so it fits ${config.videoSeconds} seconds when spoken. Plain spoken words only: no emoji, no stage directions, no quotes.
 - delivery: how the animal says it, a few words (deadpan, smug, conspiratorial whisper, dramatic, ...).
@@ -63,7 +64,7 @@ Feature: drafts treatment plans from past session notes. Animal: elephant. Deliv
 
 Return:
 - candidates: exactly 3 different jokes (different animals or angles), each with animal, delivery, gag, script, punchline (the script's last 3 to 5 words, copied exactly) and wordCount (the number of words in script, counted one by one).
-- animal, delivery, gag, script, punchline, wordCount: copied from the funniest candidate whose wordCount is 10 to 14 and that follows every rule above. If none fits, shorten the funniest one to 14 words or fewer.
+- animal, delivery, gag, script, punchline, wordCount: copied from the funniest candidate whose wordCount is 10 to 14 and that follows every rule above. When picking, check each pun: it must twist a real, common phrase and the twist must connect to the feature. If no candidate's pun passes, pick a clear, funny line with no pun over a forced pun. If none fits, shorten the funniest one to 14 words or fewer.
 - videoPrompt: a prompt for a video model, for the chosen joke. A vertical cartoon scene of the animal looking directly at the camera: describe its look and expression, then the gag as it happens, then the line in exactly this form: says in a <delivery> voice: "<script>". Props must carry no words, labels or numbers; anything paper is blank. Describe colors in plain words only, never as hex or color codes. End with exactly: "${STYLE}"`;
 
 export class ScriptRefusal extends Error {}
