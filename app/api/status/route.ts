@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { config } from "@/lib/config";
 import { fal } from "@/lib/fal";
-import { MOCK_PREFIX, MOCK_VIDEO_URL, mockReady } from "@/lib/mock";
+import { MOCK_PREFIX, MOCK_VIDEO_URL, mockEnabled, mockReady } from "@/lib/mock";
 import { transcribe } from "@/lib/transcribe";
 
 export async function GET(request: NextRequest) {
@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
   }
 
   let videoUrl: string;
-  if (config.mock && id.startsWith(MOCK_PREFIX)) {
+  if (mockEnabled() && id.startsWith(MOCK_PREFIX)) {
     // Mock: fixed video after 5s, but real transcription so subtitles are tested end to end.
     if (!mockReady(id)) return Response.json({ status: "IN_PROGRESS" });
     videoUrl = MOCK_VIDEO_URL;

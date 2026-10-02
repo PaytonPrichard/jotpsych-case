@@ -1,4 +1,10 @@
-// Fixed sample used when config.mock is true. Claude and Veo are skipped; Whisper still runs.
+// Fixed sample used in mock mode. Claude and Veo are skipped; Whisper still runs.
+
+// Mock mode comes only from the environment: set MOCK=1 in .env.local for local testing.
+// It is never set on Vercel, so production can't serve mock videos. Read per request, not at build.
+export function mockEnabled() {
+  return process.env.MOCK === "1";
+}
 
 export const MOCK_PREFIX = "mock-";
 export const MOCK_DELAY_MS = 5000;

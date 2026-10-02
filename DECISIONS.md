@@ -31,7 +31,7 @@
 - Subtitles drawn as our own overlay, not native cues: the track is set to mode "hidden" (cues load, nothing native renders) and the active cue is picked from track.cues on timeupdate/seeked/cuechange. Native cue position jumped up and down with the controls, and iOS ignores ::cue styling.
 - Overlay sits at a fixed spot 22% up from the frame bottom (lower third, above the native control bar), pointer-events none so taps reach the video; bold, centered, max 2 lines, font max(15px, 6% of frame width), #FFF2F5 on #1E125E at 85% opacity written as exact rgb(30 18 94 / 0.85). Shows in the normal iPhone page view because the video is playsInline.
 - Frame is a #FD96C9 to #813FE8 gradient border; page #1C1E85: exact brand hex values, no approximations.
-- MOCK flag in lib/config.ts (default false): skips Claude and Veo, returns a fake requestId and fixed script, and status returns a fixed video URL after 5s. Whisper still runs on that video, so the real subtitle path is tested; costs only a Whisper call.
+- Mock mode comes only from the MOCK env var (MOCK=1 in .env.local when testing locally), read per request in lib/mock.ts; there is no mock value in config.ts and MOCK is never set on Vercel, so production can't serve mock videos. Mock mode skips Claude and Veo, returns a fake requestId and fixed script, and status returns a fixed video URL after 5s. Whisper still runs on that video, so the real subtitle path is tested; costs only a Whisper call.
 - Mock requestId is "mock-<timestamp>" and status computes 5s elapsed from it: no server state, works across serverless instances.
 - Mock mode skips the daily limit and never sets the cookie: it doesn't generate a video, so it shouldn't use up real quota.
 

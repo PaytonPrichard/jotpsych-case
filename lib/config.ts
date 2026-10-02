@@ -4,8 +4,6 @@
 export type VideoModel = "fal-ai/veo3.1/lite" | "fal-ai/veo3.1/fast";
 
 export const config = {
-  // true: skip Claude, fal and Whisper and serve a fixed sample (lib/mock.ts). Free page testing.
-  mock: false as boolean,
   claudeModel: "claude-sonnet-5-5",
   videoModel: "fal-ai/veo3.1/lite" as VideoModel,
   transcribeModel: "fal-ai/whisper",

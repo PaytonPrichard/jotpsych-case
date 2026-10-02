@@ -1,7 +1,7 @@
 import { config } from "@/lib/config";
 import { fal } from "@/lib/fal";
 import { recordUse, usedToday } from "@/lib/limit";
-import { MOCK_SCRIPT, mockRequestId } from "@/lib/mock";
+import { MOCK_SCRIPT, mockEnabled, mockRequestId } from "@/lib/mock";
 import { ScriptRefusal, writeScript, type Script } from "@/lib/script";
 
 export async function POST(request: Request) {
@@ -24,7 +24,7 @@ export async function POST(request: Request) {
   }
 
   // Mock mode is free, so it bypasses the daily limit and never counts against it.
-  if (config.mock) {
+  if (mockEnabled()) {
     return Response.json({ requestId: mockRequestId(), script: MOCK_SCRIPT });
   }
 
