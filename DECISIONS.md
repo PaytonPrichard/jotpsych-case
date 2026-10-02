@@ -25,6 +25,9 @@
 - Cues: split at sentence ends, then cut each sentence evenly into 3-5 word cues; each cue holds until the next starts: greedy grouping left a 6-word cue spanning two sentences on real output.
 - WebVTT built in the browser as a Blob URL on a <track default>: no storage needed, and a real <track> works in iOS fullscreen where script-added cues are less reliable.
 - ::cue styled with exact #FFF2F5 text on #1E125E; frame is a #FD96C9 to #813FE8 gradient border; page #1C1E85: exact brand hex values, no approximations.
+- MOCK flag in lib/config.ts (default false): free end-to-end testing of the page, polling and subtitles; the mock uses a real veo output and its real Whisper words so the subtitle path is exercised, not stubbed.
+- Mock requestId is "mock-<timestamp>" and status computes 5s elapsed from it: no server state, works across serverless instances.
+- Mock mode skips the daily limit and never sets the cookie: it costs nothing, so it shouldn't use up real quota.
 
 ## Weak spots
 
@@ -35,4 +38,5 @@
 - Switching videoModel in lib/config.ts while a video is in flight makes its status call query the other endpoint. Redeploy only when no one is mid-generation, or return the model with requestId.
 - The status route trusts any fal request id: anyone who guesses an id can see that video. Ids are random UUIDs, so low risk.
 - autoPlay with sound is blocked on most phones: the video waits for a tap on the visible play control. Expected, not a bug.
+- The mock video URL is a fal media file cached for 60 days; if mock mode shows a broken player, replace MOCK_VIDEO_URL in lib/mock.ts.
 - If generation takes over ~5 minutes the client keeps polling indefinitely; check fal queue status if a visitor reports an endless spinner.

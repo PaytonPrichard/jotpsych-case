@@ -1,12 +1,17 @@
 import type { NextRequest } from "next/server";
 import { config } from "@/lib/config";
 import { fal } from "@/lib/fal";
+import { MOCK_PREFIX, mockStatus } from "@/lib/mock";
 import { transcribe } from "@/lib/transcribe";
 
 export async function GET(request: NextRequest) {
   const id = request.nextUrl.searchParams.get("id");
   if (!id || !/^[\w-]{8,64}$/.test(id)) {
     return Response.json({ error: "Missing or invalid id." }, { status: 400 });
+  }
+
+  if (config.mock && id.startsWith(MOCK_PREFIX)) {
+    return Response.json(mockStatus(id));
   }
 
   let videoUrl: string;

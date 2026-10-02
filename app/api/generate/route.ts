@@ -1,6 +1,7 @@
 import { config } from "@/lib/config";
 import { fal } from "@/lib/fal";
 import { recordUse, usedToday } from "@/lib/limit";
+import { MOCK_SCRIPT, mockRequestId } from "@/lib/mock";
 import { ScriptRefusal, writeScript, type Script } from "@/lib/script";
 
 export async function POST(request: Request) {
@@ -20,6 +21,11 @@ export async function POST(request: Request) {
       { error: `Please keep it under ${config.maxInputChars} characters.` },
       { status: 400 },
     );
+  }
+
+  // Mock mode is free, so it bypasses the daily limit and never counts against it.
+  if (config.mock) {
+    return Response.json({ requestId: mockRequestId(), script: MOCK_SCRIPT });
   }
 
   const used = await usedToday();
