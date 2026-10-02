@@ -5,7 +5,7 @@
 - All model IDs, video settings and limits live in lib/config.ts: one place to tune cost and behaviour.
 - fal client created with maxRetries 0: an automatic retry of a submit could bill for two videos.
 - FAL_KEY and ANTHROPIC_API_KEY read only in server code (lib/fal.ts, route handlers), never NEXT_PUBLIC_: keys must not ship to the browser.
-- Daily limit of 5 per visitor via an httpOnly date:count cookie: cheap guardrail without a database; bypassable by clearing cookies, acceptable for a demo.
+- Daily limit of 10 per visitor (raised from 5) via an httpOnly date:count cookie: enough room to try several features; cheap guardrail without a database, bypassable by clearing cookies, acceptable for a demo.
 - Limit counted only after a successful submit: failed attempts should not use up a visitor's quota.
 - Status route calls result() once COMPLETED: a completed request can still have failed, and result() surfaces that error.
 - Client polls with chained setTimeout (4s), not setInterval: never more than one status request in flight.
@@ -18,16 +18,18 @@
 - stop_reason "refusal" maps to a friendly 422 message; no server-side fallback model: the plan names one model and a refusal should be visible, not silently rerouted.
 - Anthropic client maxRetries 0: matches the no-automatic-retries rule; the visitor gets an error and a Try again button instead.
 - Video model is a VideoModel union in lib/config.ts (veo3.1/lite or veo3.1/fast): both take identical input, so switching is one line.
-- Player width capped at (100svh - 2rem) * 9/16 and object-contain: the whole vertical video fits a phone screen with native controls visible.
+- videoModel stays on fal-ai/veo3.1/lite for now: Fast gets compared on one example later before paying more per video.
+- Whole page fits one screen with no scrolling (laptop and phone): main is h-svh, text box and Go take their natural height, and the player is the largest 9:16 box in the remaining space via a size container (width = min(100cqw, 100cqh * 9/16)). Verified at 390x844, 375x667, 360x640, 1280x720, 1440x900: exact 9:16, no page scroll before, during and after generation.
+- Placeholder "Your video will play here." inside the frame before a video exists: the empty frame reads as broken otherwise.
 - Subtitles come from fal-ai/whisper (chunk_level "word", language "en") run on the finished video URL: Veo doesn't always say the script verbatim (test run: "listened" for "listen", "Who" for "Hoo"), so script-timed cues would drift from the audio.
 - Whisper runs inside the status call that first sees COMPLETED: one round trip, the server only transcribes URLs fal itself returned (no client-supplied URLs), and the client stops polling after that.
 - Whisper failure or 30s timeout returns words: null and the client falls back to script cues (2 or 3, spread over 0.5s-7.5s): a video with approximate subtitles beats an error.
 - Cues: split at sentence ends, then cut each sentence evenly into 3-5 word cues; each cue holds until the next starts: greedy grouping left a 6-word cue spanning two sentences on real output.
 - WebVTT built in the browser as a Blob URL on a <track default>: no storage needed, and a real <track> works in iOS fullscreen where script-added cues are less reliable.
 - ::cue styled with exact #FFF2F5 text on #1E125E; frame is a #FD96C9 to #813FE8 gradient border; page #1C1E85: exact brand hex values, no approximations.
-- MOCK flag in lib/config.ts (default false): free end-to-end testing of the page, polling and subtitles; the mock uses a real veo output and its real Whisper words so the subtitle path is exercised, not stubbed.
+- MOCK flag in lib/config.ts (default false): skips Claude and Veo, returns a fake requestId and fixed script, and status returns a fixed video URL after 5s. Whisper still runs on that video, so the real subtitle path is tested; costs only a Whisper call.
 - Mock requestId is "mock-<timestamp>" and status computes 5s elapsed from it: no server state, works across serverless instances.
-- Mock mode skips the daily limit and never sets the cookie: it costs nothing, so it shouldn't use up real quota.
+- Mock mode skips the daily limit and never sets the cookie: it doesn't generate a video, so it shouldn't use up real quota.
 
 ## Weak spots
 
@@ -39,4 +41,6 @@
 - The status route trusts any fal request id: anyone who guesses an id can see that video. Ids are random UUIDs, so low risk.
 - autoPlay with sound is blocked on most phones: the video waits for a tap on the visible play control. Expected, not a bug.
 - The mock video URL is a fal media file cached for 60 days; if mock mode shows a broken player, replace MOCK_VIDEO_URL in lib/mock.ts.
+- The current mock video is 1280x720 (landscape), 4s, and Whisper finds no speech in it: mock mode exercises the script-fallback cues (some timed past 4s), not word-timed ones, and shows a letterboxed landscape video in the 9:16 frame.
+- Script-fallback cues assume an 8s video (0.5s-7.5s); a shorter video never shows the last cue.
 - If generation takes over ~5 minutes the client keeps polling indefinitely; check fal queue status if a visitor reports an endless spinner.

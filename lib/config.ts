@@ -18,7 +18,7 @@ export const config = {
   videoSeconds: 8,
   maxScriptWords: 20,
   maxInputChars: 500,
-  dailyLimit: 5,
+  dailyLimit: 10,
   pollIntervalMs: 4000,
   limitCookie: "gen_count",
 } as const;

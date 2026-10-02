@@ -25,7 +25,6 @@ export default function Home() {
   const [input, setInput] = useState("");
   const [phase, setPhase] = useState<Phase>({ kind: "idle" });
   const scriptRef = useRef("");
-  const frameRef = useRef<HTMLDivElement>(null);
   const requestId = phase.kind === "waiting" ? phase.requestId : null;
 
   async function generate() {
@@ -75,31 +74,31 @@ export default function Home() {
     };
   }, [requestId]);
 
-  // Free the subtitle blob when it's replaced, and bring the video on screen on phones.
+  // Free the subtitle blob when it's replaced.
   const vttUrl = phase.kind === "done" ? phase.vttUrl : null;
   useEffect(() => {
     if (!vttUrl) return;
-    frameRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
     return () => URL.revokeObjectURL(vttUrl);
   }, [vttUrl]);
 
   const busy = phase.kind === "submitting" || phase.kind === "waiting";
 
   return (
-    <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 px-4 py-8">
+    // One screen, no scrolling: the controls take their natural height, the player gets the rest.
+    <main className="mx-auto flex h-svh w-full max-w-md flex-col gap-3 px-4 py-4">
       <textarea
         value={input}
         onChange={(e) => setInput(e.target.value)}
         maxLength={config.maxInputChars}
-        rows={4}
+        rows={3}
         placeholder="Describe a JotPsych feature…"
         disabled={busy}
-        className="w-full resize-none rounded-lg border-2 border-[#813FE8] bg-[#1E125E] p-3 text-[#FFF2F5] placeholder:text-[#FFF2F5]/50 focus:border-[#FD96C9] focus:outline-none"
+        className="w-full shrink-0 resize-none rounded-lg border-2 border-[#813FE8] bg-[#1E125E] p-3 text-[#FFF2F5] placeholder:text-[#FFF2F5]/50 focus:border-[#FD96C9] focus:outline-none"
       />
       <button
         onClick={generate}
         disabled={busy || !input.trim()}
-        className="rounded-lg bg-[#FD96C9] py-3 font-semibold text-[#1C1E85] disabled:opacity-50"
+        className="shrink-0 rounded-lg bg-[#FD96C9] py-2.5 font-semibold text-[#1C1E85] disabled:opacity-50"
       >
         Go
       </button>
@@ -125,17 +124,21 @@ export default function Home() {
         </div>
       )}
 
-      {/* Width capped so the whole 9:16 frame fits in the phone's visible height. */}
-      <div
-        ref={frameRef}
-        className="mx-auto w-full max-w-[calc((100svh-2rem)*9/16)] rounded-2xl bg-gradient-to-br from-[#FD96C9] to-[#813FE8] p-1.5"
-      >
-        <div className="aspect-[9/16] w-full overflow-hidden rounded-xl bg-[#1E125E]">
-          {phase.kind === "done" && (
-            <video src={phase.videoUrl} controls autoPlay playsInline className="h-full w-full object-contain">
-              <track kind="subtitles" src={phase.vttUrl} srcLang="en" label="English" default />
-            </video>
-          )}
+      {/* Size container: the frame is the largest 9:16 box that fits the remaining width and height. */}
+      <div className="flex min-h-0 flex-1 items-start justify-center" style={{ containerType: "size" }}>
+        <div
+          className="rounded-2xl bg-gradient-to-br from-[#FD96C9] to-[#813FE8] p-1.5"
+          style={{ width: "min(100cqw, 100cqh * 9 / 16)", aspectRatio: "9 / 16" }}
+        >
+          <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-xl bg-[#1E125E]">
+            {phase.kind === "done" ? (
+              <video src={phase.videoUrl} controls autoPlay playsInline className="h-full w-full object-contain">
+                <track kind="subtitles" src={phase.vttUrl} srcLang="en" label="English" default />
+              </video>
+            ) : (
+              <p className="px-4 text-center text-sm opacity-60">Your video will play here.</p>
+            )}
+          </div>
         </div>
       </div>
     </main>
