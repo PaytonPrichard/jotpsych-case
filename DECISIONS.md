@@ -30,8 +30,8 @@
 - stop_reason "refusal" maps to a friendly 422 message; no server-side fallback model: the plan names one model and a refusal should be visible, not silently rerouted.
 - Anthropic client maxRetries 0: matches the no-automatic-retries rule; the visitor gets an error and a Try again button instead.
 - Video model is a VideoModel union in lib/config.ts (veo3.1/lite or veo3.1/fast): both take identical input, so switching is one line.
-- videoModel stays on fal-ai/veo3.1/lite for now: Fast gets compared on one example later before paying more per video.
-- VIDEO_MODEL env var overrides the video model, same pattern as MOCK: read per request, only fal-ai/veo3.1/lite or fal-ai/veo3.1/fast accepted, anything else logs a warning and uses lite. Set only in .env.local to compare Fast; never set on Vercel, so production always runs lite.
+- Tested Fast vs Lite on the claims example: similar quality, Fast 1:45 vs Lite ~1:05 and 3x cost; kept Lite for wait time and reviewer budget.
+- VIDEO_MODEL env var overrides the video model, same pattern as MOCK: read per request, only fal-ai/veo3.1/lite or fal-ai/veo3.1/fast accepted, anything else logs a warning and uses lite. Used to run the Fast vs Lite comparison locally; never set on Vercel, so production always runs lite.
 - Status route also logs "whisper words" with every word's timing (word@start-end) per video: lets us check subtitle sync against the audio from Vercel logs alone.
 - MOCK_VIDEO_URL env var (local only, read only in mock mode) swaps the mock video for any logged video URL: re-check subtitles on a real video for the cost of one Whisper call.
 - Status route logs one JSON line "video completed" with requestId, model, videoUrl, script and what Whisper heard: every video is findable in Vercel logs. The client sends the script back on each poll because only generate knows it; it's capped at 500 chars and logged as data.
