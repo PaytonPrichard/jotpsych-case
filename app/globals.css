@@ -10,3 +10,9 @@ body {
   color: #FFF2F5;
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
 }
+
+/* Subtitle colors are exact brand values. */
+video::cue {
+  color: #FFF2F5;
+  background-color: #1E125E;
+}

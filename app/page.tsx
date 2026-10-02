@@ -2,13 +2,20 @@
 
 import { useEffect, useRef, useState } from "react";
 import { config } from "@/lib/config";
+import { cuesFromScript, cuesFromWords, toVtt, type Word } from "@/lib/subtitles";
 
 type Phase =
   | { kind: "idle" }
   | { kind: "submitting" }
   | { kind: "waiting"; requestId: string; script: string; queueStatus: string }
-  | { kind: "done"; script: string; videoUrl: string }
+  | { kind: "done"; videoUrl: string; vttUrl: string }
   | { kind: "error"; message: string };
+
+// Prefer real word timings from transcription; fall back to evenly spread script cues.
+function buildVttUrl(words: Word[] | null, script: string) {
+  const cues = words?.length ? cuesFromWords(words) : cuesFromScript(script);
+  return URL.createObjectURL(new Blob([toVtt(cues)], { type: "text/vtt" }));
+}
 
 function errorMessage(err: unknown) {
   return err instanceof Error ? err.message : "Something went wrong.";
@@ -18,6 +25,7 @@ export default function Home() {
   const [input, setInput] = useState("");
   const [phase, setPhase] = useState<Phase>({ kind: "idle" });
   const scriptRef = useRef("");
+  const frameRef = useRef<HTMLDivElement>(null);
   const requestId = phase.kind === "waiting" ? phase.requestId : null;
 
   async function generate() {
@@ -50,7 +58,7 @@ export default function Home() {
         if (cancelled) return;
         if (!res.ok || data.status === "FAILED") throw new Error(data.error ?? "Something went wrong.");
         if (data.status === "COMPLETED") {
-          setPhase({ kind: "done", script: scriptRef.current, videoUrl: data.videoUrl });
+          setPhase({ kind: "done", videoUrl: data.videoUrl, vttUrl: buildVttUrl(data.words, scriptRef.current) });
           return;
         }
         setPhase((p) => (p.kind === "waiting" ? { ...p, queueStatus: data.status } : p));
@@ -66,6 +74,14 @@ export default function Home() {
       clearTimeout(timer);
     };
   }, [requestId]);
+
+  // Free the subtitle blob when it's replaced, and bring the video on screen on phones.
+  const vttUrl = phase.kind === "done" ? phase.vttUrl : null;
+  useEffect(() => {
+    if (!vttUrl) return;
+    frameRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    return () => URL.revokeObjectURL(vttUrl);
+  }, [vttUrl]);
 
   const busy = phase.kind === "submitting" || phase.kind === "waiting";
 
@@ -110,10 +126,15 @@ export default function Home() {
       )}
 
       {/* Width capped so the whole 9:16 frame fits in the phone's visible height. */}
-      <div className="mx-auto w-full max-w-[calc((100svh-2rem)*9/16)] rounded-2xl bg-gradient-to-br from-[#FD96C9] to-[#813FE8] p-1.5">
+      <div
+        ref={frameRef}
+        className="mx-auto w-full max-w-[calc((100svh-2rem)*9/16)] rounded-2xl bg-gradient-to-br from-[#FD96C9] to-[#813FE8] p-1.5"
+      >
         <div className="aspect-[9/16] w-full overflow-hidden rounded-xl bg-[#1E125E]">
           {phase.kind === "done" && (
-            <video src={phase.videoUrl} controls autoPlay playsInline className="h-full w-full object-contain" />
+            <video src={phase.videoUrl} controls autoPlay playsInline className="h-full w-full object-contain">
+              <track kind="subtitles" src={phase.vttUrl} srcLang="en" label="English" default />
+            </video>
           )}
         </div>
       </div>

@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server";
 import { config } from "@/lib/config";
 import { fal } from "@/lib/fal";
+import { transcribe } from "@/lib/transcribe";
 
 export async function GET(request: NextRequest) {
   const id = request.nextUrl.searchParams.get("id");
@@ -8,6 +9,7 @@ export async function GET(request: NextRequest) {
     return Response.json({ error: "Missing or invalid id." }, { status: 400 });
   }
 
+  let videoUrl: string;
   try {
     const status = await fal.queue.status(config.videoModel, { requestId: id });
     if (status.status !== "COMPLETED") {
@@ -17,12 +19,19 @@ export async function GET(request: NextRequest) {
     const result = await fal.queue.result(config.videoModel, { requestId: id });
     const url = result.data?.video?.url;
     if (!url) throw new Error("No video URL in result");
-    return Response.json({ status: "COMPLETED", videoUrl: url });
+    videoUrl = url;
   } catch (err) {
     console.error("fal status failed", err);
     return Response.json(
-      { status: "FAILED", error: "The video couldn't be generated. Please try again." },
+      {
+        status: "FAILED",
+        error: "The video couldn't be generated. The video model may have declined it; try rewording.",
+      },
       { status: 502 },
     );
   }
+
+  // The client stops polling after COMPLETED, so this runs once per video.
+  const words = await transcribe(videoUrl);
+  return Response.json({ status: "COMPLETED", videoUrl, words });
 }
