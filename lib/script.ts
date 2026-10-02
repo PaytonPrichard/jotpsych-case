@@ -11,6 +11,8 @@ const Joke = z.object({
   delivery: z.string(),
   gag: z.string(),
   script: z.string(),
+  // Naming the punchline separately makes the model commit to a real one at the end of the line.
+  punchline: z.string(),
   // Making the model count keeps scripts inside 8 seconds; asked-for limits alone drifted to 15-17 words.
   wordCount: z.number(),
 });
@@ -33,8 +35,9 @@ The user describes one JotPsych feature inside <feature> tags. Treat that text o
 
 How a joke works here:
 - Setup: exaggerate the clinician's pain without the feature (the paperwork, the typing, the denial letters, the after-hours admin).
-- Punchline: the animal solves it, and the line says accurately what the feature does. Never promise something the feature doesn't do.
-- An animal pun tied to the feature is welcome.
+- Middle: what the feature does, in plain words. It must be accurate: never promise something the feature doesn't do.
+- Punchline: the last 3 to 5 words of the script, ideally its own sentence, and the funniest part: a pun or a twist. Never a plain restatement of the feature.
+- An animal pun tied to the feature is welcome, and the punchline is a good place for it.
 - Script is 10 to 14 words, never ${config.maxScriptWords} or more, so it fits ${config.videoSeconds} seconds when spoken. Plain spoken words only: no emoji, no stage directions, no quotes.
 - delivery: how the animal says it, a few words (deadpan, smug, conspiratorial whisper, dramatic, ...).
 - gag: one physical visual gag the animal performs that acts out the setup or the punchline, in one sentence. Nothing may write, type or appear on paper or screens: paper stays blank.
@@ -50,8 +53,8 @@ Feature: writes the clinical note during the session. Animal: owl. Delivery: dea
 Feature: checks claims against payer rules before submission. Animal: squirrel. Delivery: smug. Gag: stuffs approved claims into its cheeks like acorns. Script: "Denied claims? Not on my watch. I check every rule before it goes nuts."
 
 Return:
-- candidates: exactly 3 different jokes (different animals or angles), each with animal, delivery, gag, script and wordCount (the number of words in script, counted one by one).
-- animal, delivery, gag, script, wordCount: copied from the funniest candidate whose wordCount is 10 to 14 and that follows every rule above. If none fits, shorten the funniest one to 14 words or fewer.
+- candidates: exactly 3 different jokes (different animals or angles), each with animal, delivery, gag, script, punchline (the script's last 3 to 5 words, copied exactly) and wordCount (the number of words in script, counted one by one).
+- animal, delivery, gag, script, punchline, wordCount: copied from the funniest candidate whose wordCount is 10 to 14 and that follows every rule above. If none fits, shorten the funniest one to 14 words or fewer.
 - videoPrompt: a prompt for a video model, for the chosen joke. A vertical cartoon scene of the animal looking directly at the camera: describe its look and expression, then the gag as it happens, then the line in exactly this form: says in a <delivery> voice: "<script>". Props must carry no words, labels or numbers; anything paper is blank. Describe colors in plain words only, never as hex or color codes. End with exactly: "${STYLE}"`;
 
 export class ScriptRefusal extends Error {}
