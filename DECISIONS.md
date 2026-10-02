@@ -15,6 +15,7 @@
 - Script prompt asks for 10 to 14 words: asking for "under 20" produced exactly 20; the lower target lands at 15-16 in testing.
 - Feature text wrapped in <feature> tags and declared as data, not instructions: limits prompt injection from the textarea.
 - Server appends the script and the brand/no-captions line to videoPrompt if Claude dropped them: subtitles and brand colors depend on both.
+- Video prompt describes colors in words only ("deep navy blue background, violet purple and soft pink accents") plus "no on-screen text, no captions, no writing"; any hex code Claude adds is stripped server-side, and props must carry no words: Veo drew "#1C1E85" as text on a prop in the first live test. Exact hex values live only in our page (frame + subtitles).
 - stop_reason "refusal" maps to a friendly 422 message; no server-side fallback model: the plan names one model and a refusal should be visible, not silently rerouted.
 - Anthropic client maxRetries 0: matches the no-automatic-retries rule; the visitor gets an error and a Try again button instead.
 - Video model is a VideoModel union in lib/config.ts (veo3.1/lite or veo3.1/fast): both take identical input, so switching is one line.
@@ -33,6 +34,7 @@
 
 ## Weak spots
 
+- Veo can draw prompt text as writing in the scene. Hex codes are stripped and props are told to carry no words, but any noun that implies text (notepad, laptop screen, sign) can still sprout scribbles; check the logged videoPrompt for the clip that has writing.
 - Daily limit is a cookie: clearing cookies or a private window resets it. First thing to check if fal spend spikes; the fix is an IP-keyed counter in a KV store (e.g. Upstash Redis).
 - fal/Veo content refusals surface as a generic "couldn't be generated" message: check the "fal status failed" log line for the real fal error body.
 - Script length is enforced only by the prompt (10-14 words asked, 15-16 typical). Check the "script too long for 8s" warning in logs; a long script gets cut off at 8s and the last cue never plays.
