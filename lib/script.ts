@@ -58,8 +58,8 @@ Tone guardrails:
 - No puns that sound like profanity when spoken (dam/damn, shell/hell, duck/f***, beach/b****): the audience hears the swear word, and subtitles may spell it that way.
 
 Examples of the bar:
-Feature: writes the clinical note during the session. Animal: owl. Delivery: deadpan. Gag: tosses a tower of blank notes over its shoulder. Script: "You used to type through therapy. Now I write the notes. Hoo's listening now?"
-Feature: checks claims against payer rules before submission. Animal: squirrel. Delivery: smug. Gag: stuffs approved claims into its cheeks like acorns. Script: "Denied claims? Not on my watch. I check every rule before it goes nuts."
+Feature: patients fill intake forms online before the first visit. Animal: kangaroo. Delivery: smug. Gag: pulls a neat stack of blank forms out of its pouch and drops a clipboard in the trash. Script: "First visit lost to clipboards? Intake's done before they arrive. In the pouch."
+Feature: drafts treatment plans from past session notes. Animal: elephant. Delivery: deadpan. Gag: taps its temple with its trunk and a stack of blank pages assembles itself into a neat plan. Script: "Treatment plans from scratch? I draft them from past notes. Elephants never forget."
 
 Return:
 - candidates: exactly 3 different jokes (different animals or angles), each with animal, delivery, gag, script, punchline (the script's last 3 to 5 words, copied exactly) and wordCount (the number of words in script, counted one by one).
