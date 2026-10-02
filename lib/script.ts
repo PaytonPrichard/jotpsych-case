@@ -28,6 +28,10 @@ const ScriptSchema = z.object({
 export type Script = z.infer<typeof ScriptSchema>;
 
 // Colors in words only: Veo drew a hex code as text on a prop when the prompt contained one.
+// Always appended: during gags the animal sometimes looked down, hiding its mouth mid-line.
+const FACE_VISIBLE =
+  "The animal faces the camera with its face and mouth clearly visible the whole time it speaks; any gag uses its paws or props and never hides or turns away its face.";
+
 const STYLE =
   "Deep navy blue background, violet purple and soft pink accents. No on-screen text, no captions, no writing.";
 
@@ -96,6 +100,7 @@ export async function writeScript(feature: string): Promise<Script> {
     videoPrompt += ` The ${out.animal} ${out.gag} and says in a ${out.delivery} voice: "${out.script}"`;
   }
   if (!/no writing/i.test(videoPrompt)) videoPrompt += ` ${STYLE}`;
+  videoPrompt += ` ${FACE_VISIBLE}`;
 
   return { ...out, videoPrompt };
 }
