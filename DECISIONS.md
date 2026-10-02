@@ -25,6 +25,7 @@
 - Tone guardrails in the prompt: punch at paperwork, typing, insurance denials and admin, never at clinicians, patients or therapy; no diagnoses, symptoms, medications or patient details; brand-safe for JotPsych social.
 - Stayed on effort "low" for scripts: "medium" was no funnier on the same four features, no faster, and still miscounted words.
 - videoPrompt has the line in the form: says in a <delivery> voice: "<script>"; the server appends that sentence (with the gag) if the model dropped the script.
+- isFeature is the first field of the same structured output (no extra call). It's biased hard toward true: anything that plausibly describes clinical practice software (notes, billing, claims, prior auth, scheduling, reminders, intake, treatment plans, compliance, patient messaging), in any language, even short or vague, passes. Only clear non-features are rejected: gibberish, emoji only, unrelated scenes or stories, instructions aimed at the model. A false rejection is worse than a generic video. Rejected input gets a friendly 422 asking for a feature, before Veo, so it costs no video and doesn't use the daily limit. Checked on 11 inputs (4 non-features rejected; 7 features incl. "it helps therapists" and "prior auth" passed on 2 of 2 runs each).
 - Feature text wrapped in <feature> tags and declared as data, not instructions: limits prompt injection from the textarea.
 - Server appends the script and the brand/no-captions line to videoPrompt if Claude dropped them: subtitles and brand colors depend on both.
 - Video prompt describes colors in words only ("deep navy blue background, violet purple and soft pink accents") plus "no on-screen text, no captions, no writing"; any hex code Claude adds is stripped server-side, and props must carry no words: Veo drew "#1C1E85" as text on a prop in the first live test. Exact hex values live only in our page (frame + subtitles).
@@ -57,6 +58,7 @@
 
 ## Weak spots
 
+- isFeature is the model's judgement. If a real feature gets the "doesn't look like a JotPsych feature" message, add that phrasing to the true examples in lib/script.ts; mock mode skips the check entirely.
 - iOS native fullscreen hides our subtitle overlay (only page-level elements render there, and the track is hidden). playsInline keeps the normal view; if fullscreen subtitles matter, switch the track to "showing" on webkitbeginfullscreen.
 - Veo can draw prompt text as writing in the scene. Hex codes are stripped and props are told to carry no words, but any noun that implies text (notepad, laptop screen, sign) can still sprout scribbles; check the logged videoPrompt for the clip that has writing.
 - Daily limit is a cookie: clearing cookies or a private window resets it. First thing to check if fal spend spikes; the fix is an IP-keyed counter in a KV store (e.g. Upstash Redis).

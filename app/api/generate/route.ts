@@ -2,7 +2,7 @@ import { config, videoModel } from "@/lib/config";
 import { fal } from "@/lib/fal";
 import { recordUse, usedToday } from "@/lib/limit";
 import { MOCK_SCRIPT, mockEnabled, mockRequestId } from "@/lib/mock";
-import { ScriptRefusal, writeScript, type Script } from "@/lib/script";
+import { NotAFeature, ScriptRefusal, writeScript, type Script } from "@/lib/script";
 
 export async function POST(request: Request) {
   let body: { input?: unknown };
@@ -40,6 +40,16 @@ export async function POST(request: Request) {
   try {
     script = await writeScript(input);
   } catch (err) {
+    // Rejected before Veo, so it costs no video and doesn't count toward the daily limit.
+    if (err instanceof NotAFeature) {
+      return Response.json(
+        {
+          error:
+            "That doesn't look like a JotPsych feature. Try something like \"drafts progress notes from the session\".",
+        },
+        { status: 422 },
+      );
+    }
     if (err instanceof ScriptRefusal) {
       return Response.json(
         { error: "Our animals couldn't make a video about that. Try describing a JotPsych feature." },
