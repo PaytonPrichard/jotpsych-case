@@ -4,10 +4,14 @@ import { useEffect, useRef, useState } from "react";
 
 // The WebVTT track stays as the source of truth but is "hidden": native cue rendering
 // jumps when the controls show and iOS ignores ::cue, so we draw the active cue ourselves.
+// Fullscreen shows only the <video>, so there the track switches to "showing" and the browser
+// draws the captions natively. One switch drives both: native captions and our overlay are
+// never on at the same time.
 export function SubtitledVideo({ videoUrl, vttUrl }: { videoUrl: string; vttUrl: string }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const trackRef = useRef<HTMLTrackElement>(null);
   const [text, setText] = useState("");
+  const [nativeCaptions, setNativeCaptions] = useState(false);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -40,6 +44,23 @@ export function SubtitledVideo({ videoUrl, vttUrl }: { videoUrl: string; vttUrl:
       update();
     };
 
+    // Desktop: the Fullscreen API (webkit-prefixed on older Safari) fires on the document.
+    // iPhone: native fullscreen fires webkitbeginfullscreen / webkitendfullscreen on the video.
+    const setFullscreen = (on: boolean) => {
+      track.mode = on ? "showing" : "hidden";
+      setNativeCaptions(on);
+    };
+    const onFullscreenChange = () => {
+      const doc = document as Document & { webkitFullscreenElement?: Element | null };
+      setFullscreen((doc.fullscreenElement ?? doc.webkitFullscreenElement) === video);
+    };
+    const onBegin = () => setFullscreen(true);
+    const onEnd = () => setFullscreen(false);
+    const docEvents = ["fullscreenchange", "webkitfullscreenchange"] as const;
+    docEvents.forEach((e) => document.addEventListener(e, onFullscreenChange));
+    video.addEventListener("webkitbeginfullscreen", onBegin);
+    video.addEventListener("webkitendfullscreen", onEnd);
+
     const onceEvents = ["seeked", "loadedmetadata"] as const;
     const stopEvents = ["pause", "ended"] as const;
     video.addEventListener("play", start);
@@ -53,6 +74,9 @@ export function SubtitledVideo({ videoUrl, vttUrl }: { videoUrl: string; vttUrl:
       onceEvents.forEach((e) => video.removeEventListener(e, update));
       stopEvents.forEach((e) => video.removeEventListener(e, stop));
       trackEl.removeEventListener("load", update);
+      docEvents.forEach((e) => document.removeEventListener(e, onFullscreenChange));
+      video.removeEventListener("webkitbeginfullscreen", onBegin);
+      video.removeEventListener("webkitendfullscreen", onEnd);
     };
   }, [vttUrl]);
 
@@ -68,7 +92,7 @@ export function SubtitledVideo({ videoUrl, vttUrl }: { videoUrl: string; vttUrl:
       >
         <track ref={trackRef} kind="subtitles" src={vttUrl} srcLang="en" label="English" />
       </video>
-      {text && (
+      {text && !nativeCaptions && (
         // Fixed spot in the lower third, clear of the native control bar; taps pass through to the video.
         <div className="pointer-events-none absolute inset-x-0 bottom-[22%] flex justify-center px-[6%]">
           <p

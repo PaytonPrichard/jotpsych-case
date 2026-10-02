@@ -11,3 +11,11 @@ body {
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
 }
 
+
+/* Native captions, used only in fullscreen where our overlay can't render. Browsers that honor
+   ::cue get the brand colors; iOS fullscreen uses the system caption style. */
+video::cue {
+  color: #FFF2F5;
+  background-color: rgb(30 18 94 / 0.85);
+  font-weight: bold;
+}

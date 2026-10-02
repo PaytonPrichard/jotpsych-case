@@ -50,6 +50,7 @@
 - Each word-timed cue starts 0.15s before its first word: captions should lead the voice, not trail it.
 - WebVTT built in the browser as a Blob URL on a <track>: no storage needed, and the track stays the single source of cue timing.
 - Subtitles drawn as our own overlay, not native cues: the track is set to mode "hidden" (cues load, nothing native renders) and the active cue is picked from track.cues on timeupdate/seeked/cuechange. Native cue position jumped up and down with the controls, and iOS ignores ::cue styling.
+- Fullscreen (desktop fullscreenchange/webkitfullscreenchange, iPhone webkitbeginfullscreen/webkitendfullscreen) shows only the <video>, so our overlay can't render there: while the video itself is fullscreen the track switches to "showing" and the browser draws native captions; on exit it goes back to "hidden" and the overlay returns. One switch sets both the track mode and the overlay's visibility, so they never show together. ::cue keeps our colors for browsers that honor it.
 - The overlay picks the active cue on requestAnimationFrame while playing (plus seeked/pause/loadedmetadata), not timeupdate: timeupdate fires ~4x/sec, so cues switched up to 250ms late. Measured with a simulated 60fps clock: each cue now appears 4-16ms after its start time.
 - Overlay sits at a fixed spot 22% up from the frame bottom (lower third, above the native control bar), pointer-events none so taps reach the video; bold, centered, max 2 lines, font max(15px, 6% of frame width), #FFF2F5 on #1E125E at 85% opacity written as exact rgb(30 18 94 / 0.85). Shows in the normal iPhone page view because the video is playsInline.
 - Frame is a #FD96C9 to #813FE8 gradient border; page #1C1E85: exact brand hex values, no approximations.
@@ -60,7 +61,7 @@
 ## Weak spots
 
 - isFeature is the model's judgement. If a real feature gets the "doesn't look like a JotPsych feature" message, add that phrasing to the true examples in lib/script.ts; mock mode skips the check entirely.
-- iOS native fullscreen hides our subtitle overlay (only page-level elements render there, and the track is hidden). playsInline keeps the normal view; if fullscreen subtitles matter, switch the track to "showing" on webkitbeginfullscreen.
+- Fullscreen captions are the browser's native ones: iPhone uses the system caption style (our colors don't apply there) and positions can shift with the controls. Fullscreen events were tested by dispatching them; check on a real iPhone and a desktop browser.
 - Veo can draw prompt text as writing in the scene. Hex codes are stripped and props are told to carry no words, but any noun that implies text (notepad, laptop screen, sign) can still sprout scribbles; check the logged videoPrompt for the clip that has writing.
 - Daily limit is a cookie: clearing cookies or a private window resets it. First thing to check if fal spend spikes; the fix is an IP-keyed counter in a KV store (e.g. Upstash Redis).
 - fal/Veo content refusals surface as a generic "couldn't be generated" message: check the "fal status failed" log line for the real fal error body.
