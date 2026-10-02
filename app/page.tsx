@@ -109,10 +109,11 @@ export default function Home() {
         </div>
       )}
 
-      <div className="rounded-2xl bg-gradient-to-br from-[#FD96C9] to-[#813FE8] p-1.5">
+      {/* Width capped so the whole 9:16 frame fits in the phone's visible height. */}
+      <div className="mx-auto w-full max-w-[calc((100svh-2rem)*9/16)] rounded-2xl bg-gradient-to-br from-[#FD96C9] to-[#813FE8] p-1.5">
         <div className="aspect-[9/16] w-full overflow-hidden rounded-xl bg-[#1E125E]">
           {phase.kind === "done" && (
-            <video src={phase.videoUrl} controls autoPlay playsInline className="h-full w-full object-cover" />
+            <video src={phase.videoUrl} controls autoPlay playsInline className="h-full w-full object-contain" />
           )}
         </div>
       </div>

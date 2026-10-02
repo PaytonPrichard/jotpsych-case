@@ -10,3 +10,12 @@
 - Status route calls result() once COMPLETED: a completed request can still have failed, and result() surfaces that error.
 - Client polls with chained setTimeout (4s), not setInterval: never more than one status request in flight.
 - Step 1 hardcodes the script and videoPrompt: proves the fal pipeline end to end on the live URL before adding Claude.
+- Claude (claude-sonnet-5-5) returns { animal, script, videoPrompt } via structured outputs (zod schema): no hand-parsing JSON, a bad shape fails loudly.
+- Claude effort "low": the visitor is waiting on this call, and a 15-word script doesn't need deep reasoning.
+- Script prompt asks for 10 to 14 words: asking for "under 20" produced exactly 20; the lower target lands at 15-16 in testing.
+- Feature text wrapped in <feature> tags and declared as data, not instructions: limits prompt injection from the textarea.
+- Server appends the script and the brand/no-captions line to videoPrompt if Claude dropped them: subtitles and brand colors depend on both.
+- stop_reason "refusal" maps to a friendly 422 message; no server-side fallback model: the plan names one model and a refusal should be visible, not silently rerouted.
+- Anthropic client maxRetries 0: matches the no-automatic-retries rule; the visitor gets an error and a Try again button instead.
+- Video model is a VideoModel union in lib/config.ts (veo3.1/lite or veo3.1/fast): both take identical input, so switching is one line.
+- Player width capped at (100svh - 2rem) * 9/16 and object-contain: the whole vertical video fits a phone screen with native controls visible.

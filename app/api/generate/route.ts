@@ -1,11 +1,7 @@
 import { config } from "@/lib/config";
 import { fal } from "@/lib/fal";
 import { recordUse, usedToday } from "@/lib/limit";
-
-// Step 1: hardcoded script and prompt. Claude replaces this in step 2.
-const SCRIPT =
-  "Hi, I'm Otto! JotPsych writes your session notes, so you can focus on patients, not paperwork.";
-const VIDEO_PROMPT = `Vertical cartoon scene of a cheerful otter speaking directly to camera, saying: "${SCRIPT}" Friendly, light, comedic delivery. Background and props in deep navy #1C1E85, purple #813FE8 and pink #FD96C9. No on-screen text, no captions.`;
+import { ScriptRefusal, writeScript, type Script } from "@/lib/script";
 
 export async function POST(request: Request) {
   let body: { input?: unknown };
@@ -34,12 +30,27 @@ export async function POST(request: Request) {
     );
   }
 
+  let script: Script;
+  try {
+    script = await writeScript(input);
+  } catch (err) {
+    if (err instanceof ScriptRefusal) {
+      return Response.json(
+        { error: "Our animals couldn't make a video about that. Try describing a JotPsych feature." },
+        { status: 422 },
+      );
+    }
+    console.error("script failed", err);
+    return Response.json({ error: "Couldn't write the script. Please try again." }, { status: 502 });
+  }
+
   try {
     const { request_id } = await fal.queue.submit(config.videoModel, {
-      input: { prompt: VIDEO_PROMPT, ...config.video },
+      input: { prompt: script.videoPrompt, ...config.video },
     });
     await recordUse(used);
-    return Response.json({ requestId: request_id, script: SCRIPT });
+    console.log("submitted", { requestId: request_id, model: config.videoModel, ...script });
+    return Response.json({ requestId: request_id, script: script.script });
   } catch (err) {
     console.error("fal submit failed", err);
     return Response.json({ error: "Couldn't start the video. Please try again." }, { status: 502 });
