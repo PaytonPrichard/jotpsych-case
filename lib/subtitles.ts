@@ -5,6 +5,21 @@ export type Word = { text: string; start: number; end: number };
 export type Cue = { start: number; end: number; text: string };
 
 const MAX_WORDS = 6;
+// Share of words that must match before the script's spelling replaces Whisper's.
+const ALIGN_MIN_MATCH = 0.8;
+
+const normalize = (w: string) => w.toLowerCase().replace(/[^a-z0-9']/g, "");
+
+// Keep Whisper's timings but use the script's spelling ("Dam right", not "Damn right") when
+// the transcript matches the script word for word: same word count and at least 80% identical.
+// If they diverge, keep Whisper's text: it reflects what was actually said.
+export function alignToScript(words: Word[], script: string): Word[] {
+  const scriptWords = script.trim().split(/\s+/).filter(Boolean);
+  if (!scriptWords.length || scriptWords.length !== words.length) return words;
+  const matches = words.filter((w, i) => normalize(w.text) === normalize(scriptWords[i])).length;
+  if (matches / words.length < ALIGN_MIN_MATCH) return words;
+  return words.map((w, i) => ({ ...w, text: scriptWords[i] }));
+}
 // Captions should lead the voice, not trail it.
 export const CUE_LEAD_SECONDS = 0.15;
 

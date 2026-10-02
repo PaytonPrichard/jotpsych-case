@@ -23,6 +23,11 @@ export async function transcribe(videoUrl: string): Promise<Word[] | null> {
       if (!text || typeof start !== "number") continue;
       words.push({ text, start, end: typeof end === "number" ? end : start + 0.4 });
     }
+    // A word timed past the end of the video means Whisper hallucinated; use script cues instead.
+    if (words.some((w) => w.start > config.videoSeconds + 1)) {
+      console.warn("transcript timed past video end, ignoring", { videoUrl });
+      return null;
+    }
     return words.length ? words : null;
   } catch (err) {
     console.error("transcription failed", err);

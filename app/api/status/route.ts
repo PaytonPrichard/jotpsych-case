@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import { config, videoModel } from "@/lib/config";
 import { fal } from "@/lib/fal";
 import { MOCK_PREFIX, mockEnabled, mockReady, mockVideoUrl } from "@/lib/mock";
+import { alignToScript } from "@/lib/subtitles";
 import { transcribe } from "@/lib/transcribe";
 
 export async function GET(request: NextRequest) {
@@ -41,11 +42,13 @@ export async function GET(request: NextRequest) {
   }
 
   // The client stops polling after COMPLETED, so this runs once per video.
-  const words = await transcribe(videoUrl);
-
-  // One line per finished video so every video is findable in Vercel logs. The script comes
-  // back from the client (only generate knows it), so it is capped and logged as data.
+  // The script comes back from the client (only generate knows it), so it is capped and
+  // treated as data: a spelling reference for the subtitles and a field in the log.
   const script = (request.nextUrl.searchParams.get("script") ?? "").slice(0, config.maxInputChars);
+  const heard = await transcribe(videoUrl);
+  const words = heard && alignToScript(heard, script);
+
+  // One line per finished video so every video is findable in Vercel logs.
   console.log(
     "video completed",
     JSON.stringify({
@@ -53,7 +56,7 @@ export async function GET(request: NextRequest) {
       model: mock ? "mock" : model,
       videoUrl,
       script,
-      heard: words?.map((w) => w.text).join(" ") ?? null,
+      heard: heard?.map((w) => w.text).join(" ") ?? null,
     }),
   );
   // Word timings for debugging subtitle sync, e.g. "first@5.12-5.40".
@@ -61,7 +64,7 @@ export async function GET(request: NextRequest) {
     "whisper words",
     JSON.stringify({
       requestId: id,
-      words: words?.map((w) => `${w.text}@${w.start.toFixed(2)}-${w.end.toFixed(2)}`) ?? null,
+      words: heard?.map((w) => `${w.text}@${w.start.toFixed(2)}-${w.end.toFixed(2)}`) ?? null,
     }),
   );
 

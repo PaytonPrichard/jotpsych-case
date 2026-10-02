@@ -48,6 +48,7 @@ Tone guardrails:
 - Punch at paperwork, typing, insurance denials and admin work. Never at clinicians, patients or therapy itself.
 - Nothing about specific diagnoses, symptoms, medications or patient details.
 - Brand-safe enough to post on JotPsych's social channels.
+- No puns that sound like profanity when spoken (dam/damn, shell/hell, duck/f***, beach/b****): the audience hears the swear word, and subtitles may spell it that way.
 
 Examples of the bar:
 Feature: writes the clinical note during the session. Animal: owl. Delivery: deadpan. Gag: tosses a tower of blank notes over its shoulder. Script: "You used to type through therapy. Now I write the notes. Hoo's listening now?"
