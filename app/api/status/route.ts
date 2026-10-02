@@ -2,7 +2,7 @@ import type { NextRequest } from "next/server";
 import { config, videoModel } from "@/lib/config";
 import { fal } from "@/lib/fal";
 import { MOCK_PREFIX, mockEnabled, mockReady, mockVideoUrl } from "@/lib/mock";
-import { alignToScript } from "@/lib/subtitles";
+import { alignToScript, joinTokens } from "@/lib/subtitles";
 import { transcribe } from "@/lib/transcribe";
 
 export async function GET(request: NextRequest) {
@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
       model: mock ? "mock" : model,
       videoUrl,
       script,
-      heard: heard?.map((w) => w.text).join(" ") ?? null,
+      heard: heard ? joinTokens(heard.map((w) => w.text)) : null,
     }),
   );
   // Word timings for debugging subtitle sync, e.g. "first@5.12-5.40".
