@@ -94,12 +94,12 @@ export default function Home() {
         rows={3}
         placeholder="Describe a JotPsych feature…"
         disabled={busy}
-        className="w-full shrink-0 resize-none rounded-lg border-2 border-[#813FE8] bg-[#1E125E] p-3 text-[#FFF2F5] placeholder:text-[#FFF2F5]/50 focus:border-[#FD96C9] focus:outline-none"
+        className="w-full shrink-0 resize-none rounded-lg border-2 border-[#813FE8] bg-[#1E125E] px-3 py-2 text-base leading-5 text-[#FFF2F5] placeholder:text-[#FFF2F5]/50 focus:border-[#FD96C9] focus:outline-none"
       />
       <button
         onClick={generate}
         disabled={busy || !input.trim()}
-        className="shrink-0 rounded-lg bg-[#FD96C9] py-2.5 font-semibold text-[#1C1E85] disabled:opacity-50"
+        className="shrink-0 rounded-lg bg-[#FD96C9] py-2 font-semibold text-[#1C1E85] disabled:opacity-50"
       >
         Go
       </button>
