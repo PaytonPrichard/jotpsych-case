@@ -87,15 +87,19 @@ export default function Home() {
   return (
     // One screen, no scrolling: the controls take their natural height, the player gets the rest.
     <main className="mx-auto flex h-svh w-full max-w-md flex-col gap-3 px-4 py-4">
-      <textarea
-        value={input}
-        onChange={(e) => setInput(e.target.value)}
-        maxLength={config.maxInputChars}
-        rows={3}
-        placeholder="Describe a JotPsych feature…"
-        disabled={busy}
-        className="w-full shrink-0 resize-none rounded-lg border-2 border-[#813FE8] bg-[#1E125E] px-3 py-2 text-base leading-5 text-[#FFF2F5] placeholder:text-[#FFF2F5]/50 focus:border-[#FD96C9] focus:outline-none"
-      />
+      {/* Padding lives on the wrapper so the textarea's scroll area is exactly 4 whole lines:
+          padding inside a scrolling textarea scrolls away and leaves the top line half cut. */}
+      <div className="shrink-0 rounded-lg border-2 border-[#813FE8] bg-[#1E125E] px-3 py-2 focus-within:border-[#FD96C9]">
+        <textarea
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          maxLength={config.maxInputChars}
+          rows={4}
+          placeholder="Describe a JotPsych feature…"
+          disabled={busy}
+          className="block h-20 w-full resize-none overflow-y-auto bg-transparent p-0 text-base leading-5 text-[#FFF2F5] placeholder:text-[#FFF2F5]/50 focus:outline-none"
+        />
+      </div>
       <button
         onClick={generate}
         disabled={busy || !input.trim()}
