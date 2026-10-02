@@ -4,34 +4,25 @@ import { config } from "./config";
 export type Word = { text: string; start: number; end: number };
 export type Cue = { start: number; end: number; text: string };
 
-const MIN_WORDS = 3;
-const MAX_WORDS = 5;
+const MAX_WORDS = 6;
+// Captions should lead the voice, not trail it.
+export const CUE_LEAD_SECONDS = 0.15;
 
-// Group word timestamps into cues of 3 to 5 words. Cues never span two sentences,
-// and each sentence is cut into evenly sized cues so no cue is left with 1 or 2 words.
-export function cuesFromWords(words: Word[]): Cue[] {
-  const sentences: Word[][] = [];
-  let current: Word[] = [];
-  for (const word of words) {
-    current.push(word);
-    if (/[.!?]$/.test(word.text)) {
+// Split at every . ! ? (a cue never spans two sentences, however short), then cut any
+// sentence over 6 words into evenly sized pieces. Our scripts are usually one cue per sentence.
+function toCueGroups<T>(items: T[], text: (item: T) => string): T[][] {
+  const sentences: T[][] = [];
+  let current: T[] = [];
+  for (const item of items) {
+    current.push(item);
+    if (/[.!?]["')\]]*$/.test(text(item))) {
       sentences.push(current);
       current = [];
     }
   }
   if (current.length) sentences.push(current);
 
-  // A sentence under 3 words ("Hoot!") joins its neighbour.
-  for (let i = 0; i < sentences.length && sentences.length > 1; i++) {
-    if (sentences[i].length < MIN_WORDS) {
-      const target = i > 0 ? i - 1 : i + 1;
-      sentences[target] = target < i ? [...sentences[target], ...sentences[i]] : [...sentences[i], ...sentences[target]];
-      sentences.splice(i, 1);
-      i--;
-    }
-  }
-
-  const groups: Word[][] = [];
+  const groups: T[][] = [];
   for (const sentence of sentences) {
     const count = Math.ceil(sentence.length / MAX_WORDS);
     let taken = 0;
@@ -41,35 +32,41 @@ export function cuesFromWords(words: Word[]): Cue[] {
       taken += size;
     }
   }
+  return groups;
+}
 
+// Cues from Whisper word timings. Each cue starts 0.15s before its first word and holds
+// until the next cue takes over, so subtitles don't flicker off between words.
+export function cuesFromWords(words: Word[]): Cue[] {
+  const groups = toCueGroups(words, (w) => w.text);
+  const lead = (t: number) => Math.max(0, t - CUE_LEAD_SECONDS);
   return groups.map((group, i) => {
     const next = groups[i + 1];
-    const start = group[0].start;
-    // Hold each cue until the next one starts, so subtitles don't flicker between words.
-    const end = next ? next[0].start : Math.max(group.at(-1)!.end, start + 1);
+    const start = lead(group[0].start);
+    const end = next ? lead(next[0].start) : Math.max(group.at(-1)!.end, start + 1);
     return { start, end, text: group.map((w) => w.text).join(" ") };
   });
 }
 
-// Fallback when transcription fails: 2 or 3 cues spread evenly across 0.5s to 7.5s.
+// Fallback when transcription fails: the same sentence cues, with time spread across
+// 0.5s to 7.5s in proportion to each cue's word count.
 export function cuesFromScript(script: string): Cue[] {
   const words = script.trim().split(/\s+/).filter(Boolean);
   if (!words.length) return [];
-  const count = Math.min(words.length, words.length > 10 ? 3 : 2);
+  const groups = toCueGroups(words, (w) => w);
   const start = 0.5;
   const span = config.videoSeconds - 1;
-  const perCue = Math.ceil(words.length / count);
 
-  const cues: Cue[] = [];
-  for (let i = 0; i < words.length; i += perCue) {
-    const chunk = words.slice(i, i + perCue);
-    cues.push({
-      start: start + (span * i) / words.length,
-      end: start + (span * (i + chunk.length)) / words.length,
-      text: chunk.join(" "),
-    });
-  }
-  return cues;
+  let done = 0;
+  return groups.map((group) => {
+    const cue = {
+      start: start + (span * done) / words.length,
+      end: start + (span * (done + group.length)) / words.length,
+      text: group.join(" "),
+    };
+    done += group.length;
+    return cue;
+  });
 }
 
 function timestamp(seconds: number) {

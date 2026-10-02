@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { config, videoModel } from "@/lib/config";
 import { fal } from "@/lib/fal";
-import { MOCK_PREFIX, MOCK_VIDEO_URL, mockEnabled, mockReady } from "@/lib/mock";
+import { MOCK_PREFIX, mockEnabled, mockReady, mockVideoUrl } from "@/lib/mock";
 import { transcribe } from "@/lib/transcribe";
 
 export async function GET(request: NextRequest) {
@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
   if (mock && id.startsWith(MOCK_PREFIX)) {
     // Mock: fixed video after 5s, but real transcription so subtitles are tested end to end.
     if (!mockReady(id)) return Response.json({ status: "IN_PROGRESS" });
-    videoUrl = MOCK_VIDEO_URL;
+    videoUrl = mockVideoUrl();
   } else {
     try {
       const status = await fal.queue.status(model, { requestId: id });
@@ -54,6 +54,14 @@ export async function GET(request: NextRequest) {
       videoUrl,
       script,
       heard: words?.map((w) => w.text).join(" ") ?? null,
+    }),
+  );
+  // Word timings for debugging subtitle sync, e.g. "first@5.12-5.40".
+  console.log(
+    "whisper words",
+    JSON.stringify({
+      requestId: id,
+      words: words?.map((w) => `${w.text}@${w.start.toFixed(2)}-${w.end.toFixed(2)}`) ?? null,
     }),
   );
 

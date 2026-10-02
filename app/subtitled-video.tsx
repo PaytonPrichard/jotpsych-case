@@ -14,22 +14,44 @@ export function SubtitledVideo({ videoUrl, vttUrl }: { videoUrl: string; vttUrl:
     const trackEl = trackRef.current;
     if (!video || !trackEl) return;
     const track = trackEl.track;
-    // Hidden still loads cues and fires cuechange, but the browser draws nothing.
+    // Hidden still loads the cues, but the browser draws nothing.
     track.mode = "hidden";
 
+    // React skips the re-render when the text is unchanged, so calling this every frame is cheap.
     const update = () => {
       const t = video.currentTime;
       const cue = Array.from(track.cues ?? []).find((c) => c.startTime <= t && t < c.endTime);
       setText(cue ? (cue as VTTCue).text : "");
     };
 
-    const videoEvents = ["timeupdate", "seeked", "loadedmetadata"] as const;
-    videoEvents.forEach((e) => video.addEventListener(e, update));
-    track.addEventListener("cuechange", update);
+    // While playing, check every animation frame: timeupdate fires only ~4 times a second,
+    // which made cues switch up to 250ms late.
+    let frame = 0;
+    const tick = () => {
+      update();
+      frame = requestAnimationFrame(tick);
+    };
+    const start = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(tick);
+    };
+    const stop = () => {
+      cancelAnimationFrame(frame);
+      update();
+    };
+
+    const onceEvents = ["seeked", "loadedmetadata"] as const;
+    const stopEvents = ["pause", "ended"] as const;
+    video.addEventListener("play", start);
+    onceEvents.forEach((e) => video.addEventListener(e, update));
+    stopEvents.forEach((e) => video.addEventListener(e, stop));
     trackEl.addEventListener("load", update);
+    if (!video.paused) start();
     return () => {
-      videoEvents.forEach((e) => video.removeEventListener(e, update));
-      track.removeEventListener("cuechange", update);
+      cancelAnimationFrame(frame);
+      video.removeEventListener("play", start);
+      onceEvents.forEach((e) => video.removeEventListener(e, update));
+      stopEvents.forEach((e) => video.removeEventListener(e, stop));
       trackEl.removeEventListener("load", update);
     };
   }, [vttUrl]);

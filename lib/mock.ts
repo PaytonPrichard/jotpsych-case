@@ -21,6 +21,12 @@ export function mockRequestId() {
   return `${MOCK_PREFIX}${Date.now()}`;
 }
 
+// MOCK_VIDEO_URL in .env.local swaps in any logged video (e.g. from a "video completed" log line)
+// to re-check subtitles on it for free. Only read in mock mode, which never runs on Vercel.
+export function mockVideoUrl() {
+  return process.env.MOCK_VIDEO_URL || MOCK_VIDEO_URL;
+}
+
 export function mockReady(id: string) {
   const created = Number(id.slice(MOCK_PREFIX.length));
   return Number.isFinite(created) && Date.now() - created >= MOCK_DELAY_MS;
